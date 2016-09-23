@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Equalizer</title>
+</head>
+<body>
+  <script>
+    (function equalizer(window){
+      'use strict';
+
+      const context = new AudioContext();
+
+      function loadAudioFile(url){
+        let promise = new Promise((resolve, reject) => {
+          let request = new XMLHttpRequest();
+
+          request.open('GET', url, true);
+          request.responseType = 'arraybuffer';
+
+          request.onload = () => {
+            let response = request.response;
+            if (response.byteLength){
+              context.decodeAudioData(request.response, resolve);
+            }
+            else {
+              reject('Cannot load file at url: ' + url);
+            }
+          };
+
+          request.onerror = reject;
+
+          request.send();
+        });
+
+        return promise;
+      }
+
+      function play(fileSrc){
+        loadAudioFile(fileSrc).then(
+          (buffer) => {
+            let source = context.createBufferSource();
+            source.buffer = buffer;
+            source.connect(context.destination);
+            source.start(0);
+          },
+          (reason) => {
+            console.error('File load failed!', reason);
+          });
+      }
+
+      play('/sounds/01 - Bob Marley - Sun is shining.mp3');
+
+    }(window));
+  </script>
+</body>
+</html>
