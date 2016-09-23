@@ -16,7 +16,7 @@
       'use strict';
 
       const context = new AudioContext();
-      const byId = function byId(id) {
+      const byId = function byId(id){
         let cache = byId.cache || {};
 
         if (cache.hasOwnProperty(id)){
@@ -25,11 +25,11 @@
 
         let el = document.getElementById(id);
 
-        el.on = function (event, handler) {
+        el.on = function(event, handler){
           this.addEventListener(event, handler, false);
         }.bind(el);
 
-        el.text = function (text = '') {
+        el.text = function(text = ''){
           this.innerText = text;
         }.bind(el);
 
@@ -44,6 +44,8 @@
         byId('track-info').text(info);
       };
       let source;
+      let startOffset = 0;
+      let startTime = 0;
 
       function loadAudioFile(url){
         let promise = new Promise((resolve, reject) => {
@@ -71,12 +73,14 @@
         return promise;
       }
 
-      function playBuffer(buffer, offset = 0){
+      function playBuffer(buffer){
+        startTime = context.currentTime;
+
         source = context.createBufferSource();
         source.buffer = buffer;
+        source.loop = true;
         source.connect(context.destination);
-        source.start(offset);
-
+        source.start(0, startOffset % buffer.duration);
       }
 
       let updateInfo = (fileSrc, buffer) => {
@@ -88,6 +92,12 @@
 
       function play(fileSrc){
         let cache = play.cache || {};
+
+        if (source){
+          return;
+        }
+
+        playerInfo('loading...');
 
         if (cache.hasOwnProperty(fileSrc)){
           let buffer = cache[fileSrc];
@@ -101,8 +111,8 @@
             play.cache = cache[fileSrc] = buffer;
             updateInfo(fileSrc, buffer);
             playBuffer(buffer);
-
-          }, (reason) => {
+          },
+          (reason) => {
             playerInfo('load error!');
             trackInfo();
             console.error('File load failed!', reason);
@@ -111,17 +121,20 @@
       }
 
       byId('btn-play').on('click', () => {
-        playerInfo('loading...');
         play('/sounds/01 - Bob Marley - Sun is shining.mp3');
       });
 
       byId('btn-pause').on('click', () => {
-        trackInfo();
-        playerInfo('paused');
-        source.disconnect();
+        if (source){
+          trackInfo();
+          playerInfo('paused');
+          startOffset += context.currentTime - startTime;
+          source.stop();
+          source = null;
+        }
       });
 
-    }(window));
-  </script>
+    })(window);
+</script>
 </body>
 </html>
