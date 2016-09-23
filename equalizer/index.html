@@ -71,24 +71,43 @@
         return promise;
       }
 
+      function playBuffer(buffer, offset = 0){
+        source = context.createBufferSource();
+        source.buffer = buffer;
+        source.connect(context.destination);
+        source.start(offset);
+
+      }
+
+      let updateInfo = (fileSrc, buffer) => {
+        playerInfo('playing');
+        let fileName = fileSrc.substr(fileSrc.lastIndexOf('/') + 1);
+        let duration = (buffer.duration / 60).toFixed(2);
+        trackInfo(`${fileName} - (${duration})`);
+      };
+
       function play(fileSrc){
+        let cache = play.cache || {};
+
+        if (cache.hasOwnProperty(fileSrc)){
+          let buffer = cache[fileSrc];
+          updateInfo(fileSrc, buffer);
+          playBuffer(buffer);
+          return;
+        }
+
         loadAudioFile(fileSrc).then(
           (buffer) => {
-            source = context.createBufferSource();
-            source.buffer = buffer;
-            source.connect(context.destination);
-            source.start(0);
+            play.cache = cache[fileSrc] = buffer;
+            updateInfo(fileSrc, buffer);
+            playBuffer(buffer);
 
-            playerInfo('playing');
-            let fileName = fileSrc.substr(fileSrc.lastIndexOf('/') + 1);
-            let duration = (buffer.duration / 60).toFixed(2);
-            trackInfo(`${fileName} - (${duration})`);
-          },
-          (reason) => {
+          }, (reason) => {
             playerInfo('load error!');
             trackInfo();
             console.error('File load failed!', reason);
-          });
+          }
+        );
       }
 
       byId('btn-play').on('click', () => {
