@@ -2,13 +2,21 @@
 <html>
 <head>
   <title>Equalizer</title>
+  <link rel=stylesheet href="style.css">
 </head>
 <body>
+  <div>
+    <div id="player-info" class="info">paused</div>
+    <button id="btn-play">Play</button>
+    <button id="btn-pause">Pause</button>
+  </div>
   <script>
     (function equalizer(window){
       'use strict';
 
       const context = new AudioContext();
+      let playerInfo = document.getElementById('player-info');
+      let source;
 
       function loadAudioFile(url){
         let promise = new Promise((resolve, reject) => {
@@ -20,6 +28,7 @@
           request.onload = () => {
             let response = request.response;
             if (response.byteLength){
+              // This will decode the AudioBuffer passed to the resolve
               context.decodeAudioData(request.response, resolve);
             }
             else {
@@ -38,17 +47,30 @@
       function play(fileSrc){
         loadAudioFile(fileSrc).then(
           (buffer) => {
-            let source = context.createBufferSource();
+            source = context.createBufferSource();
             source.buffer = buffer;
             source.connect(context.destination);
             source.start(0);
+
+            let fileName = fileSrc.substr(fileSrc.lastIndexOf('/') + 1);
+            let duration = (buffer.duration / 60).toFixed(2);
+            playerInfo.innerText = `playing ${fileName} - (${duration})`;
           },
           (reason) => {
+            playerInfo.innerText = 'load error!';
             console.error('File load failed!', reason);
           });
       }
 
-      play('/sounds/01 - Bob Marley - Sun is shining.mp3');
+      document.getElementById('btn-play').addEventListener('click', () => {
+        playerInfo.innerText = 'loading...';
+        play('/sounds/01 - Bob Marley - Sun is shining.mp3');
+      });
+
+      document.getElementById('btn-pause').addEventListener('click', () => {
+        playerInfo.innerText = 'paused';
+        source.disconnect();
+      });
 
     }(window));
   </script>
