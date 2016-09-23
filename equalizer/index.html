@@ -16,32 +16,48 @@
       'use strict';
 
       const context = new AudioContext();
-      const byId = function byId(id){
-        let cache = byId.cache || {};
+      const dom = function dom(selector){
+        let cache = dom.cache || {};
 
-        if (cache.hasOwnProperty(id)){
-          return cache[id];
+        if (cache.hasOwnProperty(selector)){
+          return cache[selector];
         }
 
-        let el = document.getElementById(id);
+        let el;
 
-        el.on = function(event, handler){
-          this.addEventListener(event, handler, false);
-        }.bind(el);
+        if (selector.match(/^#/)){
+          el = [document.getElementById(selector.substring(1))];
+        }
+        else {
+          el = Array.from[document.querySelectorAll(selector)];
+        }
 
-        el.text = function(text = ''){
-          this.innerText = text;
-        }.bind(el);
+        const domAbstract = {
+          get: (index = 0) => {
+            return el[index];
+          },
+          on: function(event, handler){
+            el.forEach((el) => {
+              el.addEventListener(event, handler, false);
+            });
+          },
+          text: (innerText) => {
+            el.forEach((el) => {
+              el.innerText = innerText;
+            });
+          }
+        };
 
-        byId.cache = cache[id] = el;
+        dom.cache = cache[selector] = domAbstract;
 
-        return el;
+        return domAbstract;
       };
-      let playerInfo = (info) => {
-        byId('player-info').text(info);
+
+      let playerInfo = (info = '') => {
+        dom('#player-info').text(info);
       };
-      let trackInfo = (info) => {
-        byId('track-info').text(info);
+      let trackInfo = (info = '') => {
+        dom('#track-info').text(info);
       };
       let source;
       let startOffset = 0;
@@ -120,11 +136,11 @@
         );
       }
 
-      byId('btn-play').on('click', () => {
+      dom('#btn-play').on('click', () => {
         play('/sounds/01 - Bob Marley - Sun is shining.mp3');
       });
 
-      byId('btn-pause').on('click', () => {
+      dom('#btn-pause').on('click', () => {
         if (source){
           trackInfo();
           playerInfo('paused');
