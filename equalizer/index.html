@@ -7,6 +7,7 @@
 <body>
   <div>
     <div id="player-info" class="info">paused</div>
+    <div id="track-info" class="info"></div>
     <button id="btn-play">Play</button>
     <button id="btn-pause">Pause</button>
   </div>
@@ -15,7 +16,33 @@
       'use strict';
 
       const context = new AudioContext();
-      let playerInfo = document.getElementById('player-info');
+      const byId = function byId(id) {
+        let cache = byId.cache || {};
+
+        if (cache.hasOwnProperty(id)){
+          return cache[id];
+        }
+
+        let el = document.getElementById(id);
+
+        el.on = function (event, handler) {
+          this.addEventListener(event, handler, false);
+        }.bind(el);
+
+        el.text = function (text = '') {
+          this.innerText = text;
+        }.bind(el);
+
+        byId.cache = cache[id] = el;
+
+        return el;
+      };
+      let playerInfo = (info) => {
+        byId('player-info').text(info);
+      };
+      let trackInfo = (info) => {
+        byId('track-info').text(info);
+      };
       let source;
 
       function loadAudioFile(url){
@@ -52,23 +79,26 @@
             source.connect(context.destination);
             source.start(0);
 
+            playerInfo('playing');
             let fileName = fileSrc.substr(fileSrc.lastIndexOf('/') + 1);
             let duration = (buffer.duration / 60).toFixed(2);
-            playerInfo.innerText = `playing ${fileName} - (${duration})`;
+            trackInfo(`${fileName} - (${duration})`);
           },
           (reason) => {
-            playerInfo.innerText = 'load error!';
+            playerInfo('load error!');
+            trackInfo();
             console.error('File load failed!', reason);
           });
       }
 
-      document.getElementById('btn-play').addEventListener('click', () => {
-        playerInfo.innerText = 'loading...';
+      byId('btn-play').on('click', () => {
+        playerInfo('loading...');
         play('/sounds/01 - Bob Marley - Sun is shining.mp3');
       });
 
-      document.getElementById('btn-pause').addEventListener('click', () => {
-        playerInfo.innerText = 'paused';
+      byId('btn-pause').on('click', () => {
+        trackInfo();
+        playerInfo('paused');
         source.disconnect();
       });
 
